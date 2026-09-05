@@ -1,16 +1,17 @@
 const App = {
   modelMap: {},
   modelList: [],
-  currentPage: "home",
   carousel: { active: false, photos: [], index: 0, slug: "" },
-  modelPage: { active: false, slug: "" },
+  modelPage: false,
 
   async init() {
     try {
       document.getElementById("grid").innerHTML = Array(8).fill("").map(() => '<div class="skeleton-card"></div>').join("");
       const [models, photos] = await Promise.all([API.fetchModels(), API.fetchPhotos()]);
       this.modelMap = API.buildModelMap(models, photos);
-      this.modelList = Object.values(this.modelMap).sort((a, b) => b.photos.length - a.photos.length);
+      this.modelList = Object.values(this.modelMap)
+        .filter(m => m.photos.length > 0)
+        .sort((a, b) => b.photos.length - a.photos.length);
       this.renderHome();
       this.handleRoute();
       window.addEventListener("popstate", () => this.handleRoute());
@@ -32,34 +33,40 @@ const App = {
   renderHome() {
     document.getElementById("stats").textContent = `${this.modelList.length} modelos · ${this.modelList.reduce((s, m) => s + m.photos.length, 0)} imagens`;
     const grid = document.getElementById("grid");
-    grid.innerHTML = this.modelList.map(m => `
-      <div class="card" onclick="App.openModel('${m.slug}')">
+    grid.innerHTML = this.modelList.map(m => {
+      const photos = m.photos.slice(0, 5);
+      return `
+      <div class="card">
         <div class="card-header">
-          <img class="card-avatar" src="${m.avatar || API.getModelAvatar(m.slug)}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 36 36%22><rect fill=%22%23222%22 width=%2236%22 height=%2236%22/><text x=%2250%25%22 y=%2256%25%22 text-anchor=%22middle%22 fill=%22%23888%22 font-size=%2214%22>${(m.name||"?")[0]}</text></svg>'">
+          <img class="card-avatar" src="${m.avatar || API.getModelAvatar(m.slug)}" 
+               onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 36 36%22><rect fill=%22%23222%22 width=%2236%22 height=%2236%22/><text x=%2250%25%22 y=%2256%25%22 text-anchor=%22middle%22 fill=%22%23888%22 font-size=%2214%22>${(m.name||"?")[0]}</text></svg>'">
           <div class="card-info">
             <div class="card-name">${m.name}</div>
             <div class="card-username">@${m.username || m.slug} · ${m.photos.length} post${m.photos.length!==1?"s":""}</div>
           </div>
+          <button class="btn-site" onclick="window.open('https://facility2024.github.io/FastfotosHot/?modelo=${m.slug}','_blank')">Site</button>
           <button class="btn-coconudi" onclick="event.stopPropagation()">COCONUDI</button>
         </div>
         <div class="card-photos">
-          ${m.photos.slice(0, 5).map((p, i) => {
+          ${photos.map((p, i) => {
             const url = p.media?.[0]?.url || API.getMediaUrl(m.slug, p.shortcode);
-            return `<div class="card-photo" onclick="event.stopPropagation(); App.openCarousel('${m.slug}', ${i})">
+            return `<div class="card-photo" onclick="App.openCarousel('${m.slug}', ${i})">
               <img src="${url}" loading="lazy" onerror="this.parentElement.style.display='none'">
-              ${p.media?.length > 1 ? `<span class="photo-count">${p.media.length}</span>` : ""}
+              ${p.media?.length > 1 ? `<span class="photo-badge">${p.media.length}</span>` : ""}
               ${p.cta_enabled && p.cta_url ? `<a href="${p.cta_url}" target="_blank" rel="noopener" class="photo-cta" onclick="event.stopPropagation()">${p.cta_label || "CTA"}</a>` : ""}
             </div>`;
           }).join("")}
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   },
 
   openModel(slug) {
     const m = this.modelMap[slug];
     if (!m) return;
-    this.modelPage = { active: true, slug };
+    this.modelPage = true;
     history.pushState(null, "", `?modelo=${slug}`);
+    document.getElementById("home-page").style.display = "none";
     const modal = document.getElementById("model-modal");
     const avatar = m.avatar || API.getModelAvatar(slug);
     modal.innerHTML = `
@@ -87,18 +94,17 @@ const App = {
             const url = p.media?.[0]?.url || API.getMediaUrl(slug, p.shortcode);
             return `<div class="profile-photo" onclick="App.openCarousel('${slug}', ${i})">
               <img src="${url}" loading="lazy">
-              ${p.media?.length > 1 ? `<span class="photo-count">${p.media.length}</span>` : ""}
+              ${p.media?.length > 1 ? `<span class="photo-badge">${p.media.length}</span>` : ""}
               ${p.cta_enabled && p.cta_url ? `<a href="${p.cta_url}" target="_blank" rel="noopener" class="photo-cta" onclick="event.stopPropagation()">${p.cta_label || "CTA"}</a>` : ""}
             </div>`;
           }).join("")}
         </div>
       </div>`;
     modal.classList.add("active");
-    document.getElementById("home-page").style.display = "none";
   },
 
   closeModel() {
-    this.modelPage.active = false;
+    this.modelPage = false;
     document.getElementById("model-modal").classList.remove("active");
     document.getElementById("home-page").style.display = "";
   },
@@ -120,12 +126,11 @@ const App = {
     const { photos, index, slug } = this.carousel;
     const p = photos[index];
     const url = p.media?.[0]?.url || API.getMediaUrl(slug, p.shortcode);
-    const isMulti = p.media?.length > 1;
     const content = document.getElementById("carousel-content");
     const info = document.getElementById("carousel-info");
 
-    if (isMulti) {
-      content.innerHTML = `<div class="carousel-multi">${p.media.map((item, i) =>
+    if (p.media?.length > 1) {
+      content.innerHTML = `<div class="carousel-multi">${p.media.map(item =>
         `<img src="${item.url}" loading="lazy">`
       ).join("")}</div>`;
     } else {
