@@ -5,9 +5,6 @@ const CONFIG = {
   },
   bunny: {
     pullZoneHost: "https://COCONUDIMUDIAL.b-cdn.net",
-    storageZone: "coconudimodel",
   },
-  api: {
-    instagramEndpoint: "https://instagram-extractor-api.vercel.app/api",
-  },
+  siteUrl: "https://facility2024.github.io/FastFotosHot",
 };

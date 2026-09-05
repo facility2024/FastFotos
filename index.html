@@ -3,60 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FastFotos - Video Feed Extractor</title>
+  <title>FastfotosHot</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
   <nav class="nav">
-    <a href="index.html" class="nav-brand">FastFotos</a>
-    <div class="nav-links">
-      <a href="index.html" class="active">Video Feed Extractor</a>
-      <a href="modelos.html">Modelos</a>
-      <a href="fotos.html">Fotos Feed Extractor</a>
-    </div>
+    <a href="index.html" class="nav-brand">FastfotosHot</a>
   </nav>
 
-  <div class="container">
+  <div id="home-page">
     <div class="hero">
-      <h1><em class="emoji">&#127909;</em> Video Feed Extractor</h1>
-      <div class="subtitle" id="stats">0 modelos &middot; 0 posts</div>
+      <h1>Modelos</h1>
+      <div class="sub" id="stats"></div>
     </div>
-
-    <div class="status-bar">
-      <span class="status-dot"></span>
-      Sistema conectado ao Supabase &middot; Dados atualizados em tempo real
-    </div>
-
-    <div class="input-section">
-      <textarea id="link-input" placeholder="Cole varios links do Instagram (um por linha)&#10;https://instagram.com/p/...&#10;https://instagram.com/reel/..."></textarea>
-      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
-        <button class="btn btn-gradient" onclick="App.handleExtract()">Adicionar em lote</button>
-        <span style="color:var(--text-secondary);font-size:13px">2 paralelos &middot; reposicao do que faltar</span>
-      </div>
-    </div>
-
-    <div id="models-grid" class="models-grid"></div>
-    <div id="pagination" class="pagination"></div>
+    <div id="grid" class="grid"></div>
   </div>
 
-  <!-- Lightbox -->
-  <div id="lightbox" class="lightbox">
-    <button class="lightbox-close" onclick="App.closeLightbox()">&times;</button>
-    <button class="lightbox-nav lightbox-prev" onclick="App.lightboxPrev()">&#8249;</button>
-    <button class="lightbox-nav lightbox-next" onclick="App.lightboxNext()">&#8250;</button>
-    <div id="lightbox-content" class="lightbox-content"></div>
-    <div id="lightbox-info" class="lightbox-info"></div>
-  </div>
-
-  <!-- Feed View -->
-  <div id="feed-view" class="feed-view"></div>
-
-  <!-- Model Modal -->
   <div id="model-modal" class="model-modal"></div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
+  <div id="carousel" class="carousel">
+    <button class="carousel-close" onclick="App.closeCarousel()">&times;</button>
+    <button class="carousel-nav carousel-prev" onclick="App.carouselPrev()">&#8249;</button>
+    <button class="carousel-nav carousel-next" onclick="App.carouselNext()">&#8250;</button>
+    <div id="carousel-content" class="carousel-content"></div>
+    <div id="carousel-info" class="carousel-info"></div>
+  </div>
 
   <script src="config.js"></script>
   <script src="js/api.js"></script>
