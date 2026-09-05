@@ -1,0 +1,10 @@
+{
+  "name": "fastfotos",
+  "version": "1.0.0",
+  "description": "FastFotos - Instagram Feed Extractor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}

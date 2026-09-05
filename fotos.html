@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FastFotos - Fotos Feed Extractor</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .fotos-header { display: flex; align-items: center; justify-content: space-between; padding: 32px 0 24px; }
+    .fotos-header h1 { font-size: 28px; font-weight: 700; }
+    .fotos-header h1 em { font-style: normal; }
+    .fotos-grid { display: flex; flex-direction: column; gap: 16px; }
+    .fotos-model-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .fotos-model-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+    }
+    .fotos-model-info { display: flex; align-items: center; gap: 10px; }
+    .fotos-photos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 4px;
+      padding: 0 4px 4px;
+    }
+    .fotos-photos-grid .media-item {
+      aspect-ratio: 1;
+    }
+    .fotos-count { color: var(--text-secondary); font-size: 13px; }
+    .back-link { color: var(--text-secondary); font-size: 14px; }
+    .back-link:hover { color: var(--text-primary); }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html" class="nav-brand">FastFotos</a>
+    <div class="nav-links">
+      <a href="index.html">Video Feed Extractor</a>
+      <a href="modelos.html">Modelos</a>
+      <a href="fotos.html" class="active">Fotos Feed Extractor</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="fotos-header">
+      <h1><em>&#128248;</em> Fotos Feed Extractor</h1>
+      <a href="index.html" class="back-link">&larr; Video Feed Extractor</a>
+    </div>
+    <div id="fotos-stats" style="color:var(--text-secondary);font-size:14px;margin-bottom:24px"></div>
+    <div id="fotos-grid" class="fotos-grid"></div>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox">
+    <button class="lightbox-close" onclick="App.closeLightbox()">&times;</button>
+    <button class="lightbox-nav lightbox-prev" onclick="App.lightboxPrev()">&#8249;</button>
+    <button class="lightbox-nav lightbox-next" onclick="App.lightboxNext()">&#8250;</button>
+    <div id="lightbox-content" class="lightbox-content"></div>
+    <div id="lightbox-info" class="lightbox-info"></div>
+  </div>
+
+  <!-- Feed View -->
+  <div id="feed-view" class="feed-view"></div>
+
+  <!-- Model Modal -->
+  <div id="model-modal" class="model-modal"></div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const grid = document.getElementById("fotos-grid");
+      const statsEl = document.getElementById("fotos-stats");
+      try {
+        grid.innerHTML = Array(6).fill("").map(() => '<div class="skeleton skeleton-card" style="height:200px"></div>').join("");
+        
+        const [images, carousels, models] = await Promise.all([
+          API.fetchFeedImages(),
+          API.fetchCarousels(),
+          API.fetchModels(),
+        ]);
+        
+        const allPhotos = [...images, ...carousels];
+        const modelMap = {};
+        for (const p of allPhotos) {
+          if (!modelMap[p.model_slug]) {
+            modelMap[p.model_slug] = {
+              slug: p.model_slug,
+              name: p.model_name,
+              username: p.model_slug,
+              photos: [],
+            };
+          }
+          modelMap[p.model_slug].photos.push(p);
+        }
+        
+        for (const m of models) {
+          const slug = m.slug || m.username;
+          if (modelMap[slug]) {
+            modelMap[slug].username = m.username;
+            modelMap[slug].bio = m.bio;
+            modelMap[slug].avatar = m.profile_pic_url;
+          }
+        }
+
+        const modelList = Object.values(modelMap)
+          .sort((a, b) => b.photos.length - a.photos.length);
+        
+        const totalModels = modelList.length;
+        const totalPhotos = allPhotos.length;
+        statsEl.textContent = `${totalModels} modelos \u00b7 ${totalPhotos} imagens`;
+
+        grid.innerHTML = modelList.map(m => `
+          <div class="fotos-model-card">
+            <div class="fotos-model-header">
+              <div class="fotos-model-info">
+                <img class="model-avatar" src="${m.avatar || API.getModelAvatar(m.slug)}" 
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 36 36%22><rect fill=%22%23333%22 width=%2236%22 height=%2236%22/><text x=%2250%25%22 y=%2255%25%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2214%22>${m.name[0]}</text></svg>'" alt="">
+                <div>
+                  <div class="model-name">${m.name}</div>
+                  <div class="model-username">@${m.username}</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="fotos-count">${m.photos.length} posts</span>
+                <button class="btn btn-sm btn-gradient" onclick="App.openModelModal('${m.slug}')">COCONUDI</button>
+              </div>
+            </div>
+            <div class="fotos-photos-grid">
+              ${m.photos.slice(0, 8).map((p, i) => {
+                const mediaUrl = p.media?.[0]?.url || p.cdn_url;
+                return `
+                <div class="media-item" onclick="App.openLightbox(App.modelMap['${m.slug}'].posts, ${i})">
+                  <img src="${mediaUrl}" loading="lazy" onerror="this.parentElement.style.display='none'">
+                  <div class="media-overlay">
+                    <span class="media-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2z"/></svg></span>
+                  </div>
+                </div>`;
+              }).join("")}
+            </div>
+          </div>
+        `).join("");
+      } catch (err) {
+        grid.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-secondary)">Erro: ${err.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>
